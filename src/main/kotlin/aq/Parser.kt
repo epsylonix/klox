@@ -1,5 +1,7 @@
 package aq
 
+class ParseError : RuntimeException()
+
 class Parser(private val tokens: List<Token>) {
     private var current: Int = 0
 
@@ -121,7 +123,8 @@ class Parser(private val tokens: List<Token>) {
             return Grouping(expr)
         }
 
-        error(peek(), "Expect expression.")
+        error(peek(), "Expected expression")
+        throw ParseError()
     }
 
     private fun previous(): Token {
@@ -154,6 +157,7 @@ class Parser(private val tokens: List<Token>) {
         }
 
         error(peek(), message)
+        throw ParseError()
     }
 
     private fun check(token: TokenType): Boolean {
