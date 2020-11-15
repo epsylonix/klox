@@ -4,14 +4,19 @@ import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 
-class Interpreter : Visitor<Any?> {
-    fun interpret(expression: Expr) {
+class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+    private val environment = Environment()
+
+    fun interpret(statements: List<Stmt>) {
         try {
-            val value = eval(expression)
-            println(stringify(value))
+            statements.forEach(::execute)
         } catch (error: RuntimeError) {
             runtimeError(error)
         }
+    }
+
+    private fun execute(stmt: Stmt) {
+        stmt.accept(this)
     }
 
     @ExperimentalContracts
@@ -94,6 +99,29 @@ class Interpreter : Visitor<Any?> {
                 throw IllegalStateException("unexpected unary operator: ${expr.operator}")
         }
     }
+
+    // access to var
+    override fun visitVariableExpr(expr: Variable): Any? {
+        return environment.get(expr.name)
+    }
+    // statements ======================
+
+    override fun visitExpressionStmt(stmt: Expression) {
+        eval(stmt.expression)
+    }
+
+    override fun visitPrintStmt(stmt: Print) {
+        val value = eval(stmt.expression)
+        println(stringify(value))
+    }
+
+    // var definition
+    override fun visitVarStmt(stmt: Var) {
+        val value = stmt.initializer?.let(::eval)
+        environment.define(stmt.name.lexeme, value)
+    }
+
+    // ===================================
 
     private fun isTruthy(obj: Any?): Boolean {
         obj ?: return false

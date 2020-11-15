@@ -30,10 +30,10 @@ object Aq {
         val scanner = Scanner(script)
         val tokens: List<Token> = scanner.scanTokens()
 
-        val expression = Parser(tokens).parse()
-        println(AstPrinter().print(expression))
+        val statements = Parser(tokens).parse()
+//        println(AstPrinter().print(expression))
 
-        interpreter.interpret(expression)
+        interpreter.interpret(statements)
 //
 //        for (token in tokens) {
 //            System.out.println(token)

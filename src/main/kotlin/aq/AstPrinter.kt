@@ -1,6 +1,6 @@
 package aq
 
-internal class AstPrinter : Visitor<String> {
+internal class AstPrinter : Expr.Visitor<String> {
     fun print(expr: Expr): String {
         return expr.accept(this)
     }
@@ -22,6 +22,10 @@ internal class AstPrinter : Visitor<String> {
 
     override fun visitUnaryExpr(expr: Unary): String {
         return parenthesize(expr.operator.lexeme, expr.right)
+    }
+
+    override fun visitVariableExpr(expr: Variable): String {
+        return parenthesize("var", expr)
     }
 
     private fun parenthesize(name: String, vararg exprs: Expr): String {

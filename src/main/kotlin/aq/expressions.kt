@@ -1,21 +1,23 @@
 package aq
 
-interface Visitor<R> {
-//    fun visitAssignExpr(expr: Assign?): R
-    fun visitBinaryExpr(expr: Binary): R
-//    fun visitCallExpr(expr: Call?): R
-//    fun visitGetExpr(expr: Get?): R
-    fun visitGroupingExpr(expr: Grouping): R
-    fun visitLiteralExpr(expr: Literal): R
-//    fun visitLogicalExpr(expr: Logical?): R
-//    fun visitSetExpr(expr: Set<*>?): R
-//    fun visitSuperExpr(expr: Super?): R
-//    fun visitThisExpr(expr: This?): R
-    fun visitUnaryExpr(expr: Unary): R
-//    fun visitVariableExpr(expr: Variable?): R
-}
-
 abstract class Expr {
+    interface Visitor<R> {
+        //    fun visitAssignExpr(expr: Assign?): R
+        fun visitBinaryExpr(expr: Binary): R
+
+        //    fun visitCallExpr(expr: Call?): R
+//    fun visitGetExpr(expr: Get?): R
+        fun visitGroupingExpr(expr: Grouping): R
+        fun visitLiteralExpr(expr: Literal): R
+
+        //    fun visitLogicalExpr(expr: Logical): R
+//    fun visitSetExpr(expr: Set<*>): R
+//    fun visitSuperExpr(expr: Super): R
+//    fun visitThisExpr(expr: This): R
+        fun visitUnaryExpr(expr: Unary): R
+        fun visitVariableExpr(expr: Variable): R
+    }
+
     abstract fun <R> accept(visitor: Visitor<R>): R
 }
 
@@ -40,5 +42,11 @@ data class Literal(val value: Any?) : Expr() {
 data class Unary(val operator: Token, val right: Expr) : Expr() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitUnaryExpr(this)
+    }
+}
+
+data class Variable(val name: Token) : Expr() {
+    override fun <R> accept(visitor: Visitor<R>): R {
+        return visitor.visitVariableExpr(this)
     }
 }

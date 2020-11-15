@@ -1,5 +1,8 @@
 package aq
 
+import jdk.internal.util.xml.impl.XMLStreamWriterImpl.SEMICOLON
+
+
 class ParseError : RuntimeException()
 
 class Parser(private val tokens: List<Token>) {
@@ -17,18 +20,61 @@ class Parser(private val tokens: List<Token>) {
                    | "(" expression ")" ;
      */
 
-    fun parse(): Expr {
-        return try {
-            expression()
-        } catch (error: Exception) {
-            throw error
+    fun parse(): List<Stmt> {
+        val statements = mutableListOf<Stmt>()
+        while (!isAtEnd()) {
+            declaration()?.let(statements::add)
         }
+        return statements
+
+//        return try {
+//            expression()
+//        } catch (error: Exception) {
+//            throw error
+//        }
 //        } catch (error: ParseError) {
 //            null
 //        }
     }
 
-    fun expression(): Expr {
+    private fun declaration(): Stmt? {
+        return try {
+            if (match(TokenType.VAR)) varDeclaration() else statement()
+        } catch (error: ParseError) {
+            synchronize()
+            null
+        }
+    }
+
+    private fun statement(): Stmt {
+        return when {
+            match(TokenType.PRINT) ->
+                printStatement()
+            else ->
+                expressionStatement()
+        }
+    }
+
+    private fun printStatement(): Print {
+        val expr = expression()
+        consume(TokenType.SEMICOLON, "Expected ';' after statement")
+        return Print(expr)
+    }
+
+    private fun expressionStatement(): Stmt {
+        val expr = expression()
+        consume(TokenType.SEMICOLON, "Expected ';' after statement")
+        return Expression(expr)
+    }
+
+    private fun varDeclaration(): Stmt {
+        val name = consume(TokenType.IDENTIFIER, "Expected variable name")
+        val initialValue = if(match(TokenType.EQUAL)) expression() else null
+        consume(TokenType.SEMICOLON, "Expected ';' after variable declaration")
+        return Var(name, initialValue)
+    }
+
+    private fun expression(): Expr {
         return equality()
     }
 
@@ -112,6 +158,7 @@ class Parser(private val tokens: List<Token>) {
 
     private fun primary(): Expr {
         if (match(TokenType.NUMBER, TokenType.STRING)) return Literal(previous().literal)
+        if (match(TokenType.IDENTIFIER)) return Variable(previous())
 
         if (match(TokenType.FALSE)) return Literal(false)
         if (match(TokenType.TRUE)) return Literal(true)
@@ -150,10 +197,11 @@ class Parser(private val tokens: List<Token>) {
         return true
     }
 
-    private fun consume(type: TokenType, message: String) {
+    private fun consume(type: TokenType, message: String): Token {
         if (check(type)) {
+            val token = peek()
             advance()
-            return
+            return token
         }
 
         error(peek(), message)
