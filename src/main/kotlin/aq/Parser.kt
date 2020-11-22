@@ -5,6 +5,7 @@ class ParseError : RuntimeException()
 
 class Parser(private val tokens: List<Token>) {
     private var current: Int = 0
+    private var loopLevel: Int = 0
 
     /*
         logic_or       → logic_and ( "or" logic_and )* ;
@@ -58,35 +59,43 @@ class Parser(private val tokens: List<Token>) {
                 whileStatement()
             match(TokenType.LEFT_BRACE) ->
                 Block(block())
+            match(TokenType.BREAK) ->
+                breakStatement()
             else ->
                 expressionStatement()
         }
     }
 
     private fun forStatement(): Stmt {
-        // desugaring for into while
-        consume(TokenType.LEFT_PAREN, "Expected '(' after 'for'")
+        try {
+            loopLevel += 1
 
-        val initializer = when {
-            match(TokenType.SEMICOLON) -> null
-            match(TokenType.VAR) -> varDeclaration()
-            else -> expressionStatement()
+            // desugaring for into while
+            consume(TokenType.LEFT_PAREN, "Expected '(' after 'for'")
+
+            val initializer = when {
+                match(TokenType.SEMICOLON) -> null
+                match(TokenType.VAR) -> varDeclaration()
+                else -> expressionStatement()
+            }
+
+            var condition = if (check(TokenType.SEMICOLON)) null else expression()
+            consume(TokenType.SEMICOLON, "Expected ';' after 'for' condition")
+
+            val increment = if (check(TokenType.RIGHT_PAREN)) null else expression()
+            consume(TokenType.RIGHT_PAREN, "Expected ')' after 'for' clauses")
+
+            var body = statement()
+            body = if (increment == null) body else Block(listOf(body, Expression(increment)))
+
+            condition = condition ?: Literal(true)
+            body = While(condition, body)
+
+            body = if (initializer == null) body else Block(listOf(initializer, body))
+            return body
+        } finally {
+            loopLevel -= 1
         }
-
-        var condition = if(check(TokenType.SEMICOLON)) null else expression()
-        consume(TokenType.SEMICOLON, "Expected ';' after 'for' condition")
-
-        val increment = if(check(TokenType.RIGHT_PAREN)) null else expression()
-        consume(TokenType.RIGHT_PAREN, "Expected ')' after 'for' clauses")
-
-        var body = statement()
-        body = if(increment == null) body else Block(listOf(body, Expression(increment)))
-
-        condition = condition ?: Literal(true)
-        body = While(condition, body)
-
-        body = if (initializer == null) body else Block(listOf(initializer, body))
-        return body
     }
 
     private fun ifStatement(): Stmt {
@@ -106,12 +115,18 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun whileStatement(): While {
-        consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'")
-        val expr = expression()
-        consume(TokenType.RIGHT_PAREN, "Expected ')' after 'while' condition")
-        val body = statement()
+        try {
+            loopLevel += 1
 
-        return While(expr, body)
+            consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'")
+            val expr = expression()
+            consume(TokenType.RIGHT_PAREN, "Expected ')' after 'while' condition")
+            val body = statement()
+
+            return While(expr, body)
+        } finally {
+            loopLevel -= 1
+        }
     }
 
     private fun block(): List<Stmt> {
@@ -121,6 +136,16 @@ class Parser(private val tokens: List<Token>) {
         }
         consume(TokenType.RIGHT_BRACE, "Expected '}' after block")
         return statements
+    }
+
+    private fun breakStatement(): Break {
+        if(loopLevel == 0) {
+            error(previous(), "Invalid break statement outside of loop")
+            throw ParseError()
+        }
+
+        consume(TokenType.SEMICOLON, "Expected ';' after break")
+        return Break()
     }
 
     private fun expressionStatement(): Stmt {

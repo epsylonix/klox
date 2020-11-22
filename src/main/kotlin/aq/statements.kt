@@ -11,6 +11,7 @@ abstract class Stmt {
 //        fun visitReturnStmt(stmt: Return): R
         fun visitVarStmt(stmt: Var): R
         fun visitWhileStmt(stmt: While): R
+        fun visitBreakStmt(stmt: Break): R
     }
 
     // Nested Stmt classes here...
@@ -50,5 +51,11 @@ class If(val condition: Expr, val thenBranch: Stmt, val elseBranch: Stmt?) : Stm
 class While(val condition: Expr, val body: Stmt) : Stmt() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitWhileStmt(this)
+    }
+}
+
+class Break : Stmt() {
+    override fun <R> accept(visitor: Visitor<R>): R {
+        return visitor.visitBreakStmt(this)
     }
 }

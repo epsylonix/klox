@@ -5,6 +5,8 @@ import kotlin.contracts.contract
 
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
+    private class BreakException: Exception()
+
     private var environment = Environment()
 
     fun interpret(statements: List<Stmt>) {
@@ -155,8 +157,16 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     override fun visitWhileStmt(stmt: While) {
         while (isTruthy(eval(stmt.condition))) {
-            execute(stmt.body)
+            try {
+                execute(stmt.body)
+            } catch (e: BreakException) {
+                break
+            }
         }
+    }
+
+    override fun visitBreakStmt(stmt: Break) {
+        throw BreakException()
     }
     // ===================================
 
