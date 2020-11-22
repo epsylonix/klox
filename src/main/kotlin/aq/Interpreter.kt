@@ -5,7 +5,7 @@ import kotlin.contracts.contract
 
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
-    private val environment = Environment()
+    private var environment = Environment()
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -104,6 +104,14 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     override fun visitVariableExpr(expr: Variable): Any? {
         return environment.get(expr.name)
     }
+
+    override fun visitAssignExpr(expr: Assign): Any? {
+        val value = eval(expr.value)
+        environment.assign(expr.name, value)
+        return value
+    }
+
+
     // statements ======================
 
     override fun visitExpressionStmt(stmt: Expression) {
@@ -121,6 +129,9 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         environment.define(stmt.name.lexeme, value)
     }
 
+    override fun visitBlockStmt(stmt: Block) {
+        executeBlock(stmt.statements, Environment(environment))
+    }
     // ===================================
 
     private fun isTruthy(obj: Any?): Boolean {
@@ -130,6 +141,21 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     private fun eval(expr: Expr): Any? {
         return expr.accept(this)
+    }
+
+    private fun executeBlock(
+        statements: List<Stmt?>,
+        blockEnv: Environment
+    ) {
+        val previous = environment
+        try {
+            environment = blockEnv
+            for (statement in statements) {
+                execute(statement!!)
+            }
+        } finally {
+            this.environment = previous
+        }
     }
 
     @ExperimentalContracts

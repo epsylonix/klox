@@ -28,6 +28,10 @@ internal class AstPrinter : Expr.Visitor<String> {
         return parenthesize("var", expr)
     }
 
+    override fun visitAssignExpr(expr: Assign): String {
+        return parenthesize("assign", expr)
+    }
+
     private fun parenthesize(name: String, vararg exprs: Expr): String {
         val builder = StringBuilder()
 

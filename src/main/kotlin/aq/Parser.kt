@@ -1,6 +1,6 @@
 package aq
 
-import jdk.internal.util.xml.impl.XMLStreamWriterImpl.SEMICOLON
+import java.util.*
 
 
 class ParseError : RuntimeException()
@@ -50,6 +50,8 @@ class Parser(private val tokens: List<Token>) {
         return when {
             match(TokenType.PRINT) ->
                 printStatement()
+            match(TokenType.LEFT_BRACE) ->
+                Block(block())
             else ->
                 expressionStatement()
         }
@@ -59,6 +61,15 @@ class Parser(private val tokens: List<Token>) {
         val expr = expression()
         consume(TokenType.SEMICOLON, "Expected ';' after statement")
         return Print(expr)
+    }
+
+    private fun block(): List<Stmt> {
+        val statements = mutableListOf<Stmt>()
+        while (!check(TokenType.RIGHT_BRACE) && !isAtEnd()) {
+            declaration()?.let(statements::add)
+        }
+        consume(TokenType.RIGHT_BRACE, "Expected '}' after block")
+        return statements
     }
 
     private fun expressionStatement(): Stmt {
@@ -75,7 +86,23 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun expression(): Expr {
-        return equality()
+        return assignment()
+    }
+
+    private fun assignment(): Expr {
+        val expr = equality()
+
+        if (match(TokenType.EQUAL)) {
+            val equals = previous()
+            val value = assignment()
+            if (expr is Variable) {
+                val name: Token = expr.name
+                return Assign(name, value)
+            }
+            error(equals, "Invalid assignment target")
+        }
+
+        return expr
     }
 
     private fun equality(): Expr {

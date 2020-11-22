@@ -2,10 +2,10 @@ package aq
 
 abstract class Expr {
     interface Visitor<R> {
-        //    fun visitAssignExpr(expr: Assign?): R
+        fun visitAssignExpr(expr: Assign): R
         fun visitBinaryExpr(expr: Binary): R
 
-        //    fun visitCallExpr(expr: Call?): R
+        //    fun visitCallExpr(expr: Call): R
 //    fun visitGetExpr(expr: Get?): R
         fun visitGroupingExpr(expr: Grouping): R
         fun visitLiteralExpr(expr: Literal): R
@@ -48,5 +48,11 @@ data class Unary(val operator: Token, val right: Expr) : Expr() {
 data class Variable(val name: Token) : Expr() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitVariableExpr(this)
+    }
+}
+
+data class Assign(val name: Token, val value: Expr) : Expr() {
+    override fun <R> accept(visitor: Visitor<R>): R {
+        return visitor.visitAssignExpr(this)
     }
 }
