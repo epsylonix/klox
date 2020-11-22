@@ -7,11 +7,12 @@ abstract class Expr {
 
         //    fun visitCallExpr(expr: Call): R
 //    fun visitGetExpr(expr: Get?): R
+
         fun visitGroupingExpr(expr: Grouping): R
         fun visitLiteralExpr(expr: Literal): R
+        fun visitLogicalExpr(expr: Logical): R
 
-        //    fun visitLogicalExpr(expr: Logical): R
-//    fun visitSetExpr(expr: Set<*>): R
+        //    fun visitSetExpr(expr: Set<*>): R
 //    fun visitSuperExpr(expr: Super): R
 //    fun visitThisExpr(expr: This): R
         fun visitUnaryExpr(expr: Unary): R
@@ -54,5 +55,11 @@ data class Variable(val name: Token) : Expr() {
 data class Assign(val name: Token, val value: Expr) : Expr() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitAssignExpr(this)
+    }
+}
+
+class Logical(val left: Expr, val operator: Token, val right: Expr) : Expr() {
+    override fun <R> accept(visitor: Visitor<R>): R {
+        return visitor.visitLogicalExpr(this)
     }
 }

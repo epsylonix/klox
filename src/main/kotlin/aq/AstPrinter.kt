@@ -32,6 +32,10 @@ internal class AstPrinter : Expr.Visitor<String> {
         return parenthesize("assign", expr)
     }
 
+    override fun visitLogicalExpr(expr: Logical): String {
+        return parenthesize(expr.operator.literal.toString(), expr.left, expr.right)
+    }
+
     private fun parenthesize(name: String, vararg exprs: Expr): String {
         val builder = StringBuilder()
 

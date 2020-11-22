@@ -1,7 +1,5 @@
 package aq
 
-import java.util.*
-
 
 class ParseError : RuntimeException()
 
@@ -9,6 +7,8 @@ class Parser(private val tokens: List<Token>) {
     private var current: Int = 0
 
     /*
+        logic_or       → logic_and ( "or" logic_and )* ;
+        logic_and      → equality ( "and" equality )* ;
         expression     → equality ;
         equality       → comparison ( ( "!=" | "==" ) comparison )* ;
         comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -48,8 +48,14 @@ class Parser(private val tokens: List<Token>) {
 
     private fun statement(): Stmt {
         return when {
+            match(TokenType.FOR) ->
+                forStatement()
+            match(TokenType.IF) ->
+                ifStatement()
             match(TokenType.PRINT) ->
                 printStatement()
+            match(TokenType.WHILE) ->
+                whileStatement()
             match(TokenType.LEFT_BRACE) ->
                 Block(block())
             else ->
@@ -57,10 +63,55 @@ class Parser(private val tokens: List<Token>) {
         }
     }
 
+    private fun forStatement(): Stmt {
+        // desugaring for into while
+        consume(TokenType.LEFT_PAREN, "Expected '(' after 'for'")
+
+        val initializer = when {
+            match(TokenType.SEMICOLON) -> null
+            match(TokenType.VAR) -> varDeclaration()
+            else -> expressionStatement()
+        }
+
+        var condition = if(check(TokenType.SEMICOLON)) null else expression()
+        consume(TokenType.SEMICOLON, "Expected ';' after 'for' condition")
+
+        val increment = if(check(TokenType.RIGHT_PAREN)) null else expression()
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after 'for' clauses")
+
+        var body = statement()
+        body = if(increment == null) body else Block(listOf(body, Expression(increment)))
+
+        condition = condition ?: Literal(true)
+        body = While(condition, body)
+
+        body = if (initializer == null) body else Block(listOf(initializer, body))
+        return body
+    }
+
+    private fun ifStatement(): Stmt {
+        consume(TokenType.LEFT_PAREN, "Expected '(' after 'if'")
+        val condition = expression()
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after 'if' condition")
+        val thenBranch = statement()
+        val elseBranch = if (match(TokenType.ELSE)) statement() else null
+
+        return If(condition, thenBranch, elseBranch)
+    }
+
     private fun printStatement(): Print {
         val expr = expression()
         consume(TokenType.SEMICOLON, "Expected ';' after statement")
         return Print(expr)
+    }
+
+    private fun whileStatement(): While {
+        consume(TokenType.LEFT_PAREN, "Expected '(' after 'while'")
+        val expr = expression()
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after 'while' condition")
+        val body = statement()
+
+        return While(expr, body)
     }
 
     private fun block(): List<Stmt> {
@@ -90,7 +141,7 @@ class Parser(private val tokens: List<Token>) {
     }
 
     private fun assignment(): Expr {
-        val expr = equality()
+        val expr = or()
 
         if (match(TokenType.EQUAL)) {
             val equals = previous()
@@ -102,6 +153,28 @@ class Parser(private val tokens: List<Token>) {
             error(equals, "Invalid assignment target")
         }
 
+        return expr
+    }
+
+    private fun or(): Expr {
+        var expr: Expr = and()
+
+        while (match(TokenType.OR)) {
+            val operator = previous()
+            val right: Expr = and()
+            expr = Logical(expr, operator, right)
+        }
+        return expr
+    }
+
+    private fun and(): Expr {
+        var expr = equality()
+
+        while (match(TokenType.AND)) {
+            val operator = previous()
+            val right = equality()
+            expr = Logical(expr, operator, right)
+        }
         return expr
     }
 
