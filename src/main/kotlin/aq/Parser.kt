@@ -1,6 +1,6 @@
 package aq
 
-import java.util.*
+import jdk.internal.util.xml.impl.XMLStreamWriterImpl.SEMICOLON
 
 
 class ParseError : RuntimeException()
@@ -87,6 +87,8 @@ class Parser(private val tokens: List<Token>) {
                 ifStatement()
             match(TokenType.PRINT) ->
                 printStatement()
+            match(TokenType.RETURN) ->
+                returnStatement()
             match(TokenType.WHILE) ->
                 whileStatement()
             match(TokenType.LEFT_BRACE) ->
@@ -144,6 +146,14 @@ class Parser(private val tokens: List<Token>) {
         val expr = expression()
         consume(TokenType.SEMICOLON, "Expected ';' after statement")
         return Print(expr)
+    }
+
+    private fun returnStatement(): Return {
+        val keyword = previous()
+        val value = if (!check(TokenType.SEMICOLON)) expression() else null
+
+        consume(TokenType.SEMICOLON, "Expected ';' after return value")
+        return Return(keyword, value)
     }
 
     private fun whileStatement(): While {

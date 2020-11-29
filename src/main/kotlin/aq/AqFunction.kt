@@ -14,7 +14,11 @@ class AqFunction(private val declaration: Function) : Callable {
             environment.define(param.lexeme, arguments[i])
         }
 
-        interpreter.executeBlock(declaration.body, environment)
+        try {
+            interpreter.executeBlock(declaration.body, environment)
+        } catch (r: Interpreter.ReturnSignal) {
+            return r.value
+        }
 
         return null
     }

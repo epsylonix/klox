@@ -1,12 +1,13 @@
 package aq
 
-import java.util.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
 
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
-    private class BreakException: Exception()
+    open class Signal: Exception(null, null, false, false)
+    class BreakSignal: Signal()
+    class ReturnSignal(val value: Any?): Signal()
 
     val globals = Environment()
     private var environment = globals
@@ -190,15 +191,21 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         while (isTruthy(eval(stmt.condition))) {
             try {
                 execute(stmt.body)
-            } catch (e: BreakException) {
+            } catch (e: BreakSignal) {
                 break
             }
         }
     }
 
     override fun visitBreakStmt(stmt: Break) {
-        throw BreakException()
+        throw BreakSignal()
     }
+
+    override fun visitReturnStmt(stmt: Return) {
+        val value = stmt.value?.let(::eval)
+        throw ReturnSignal(value)
+    }
+
     // ===================================
 
     private fun isTruthy(obj: Any?): Boolean {
