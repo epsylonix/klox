@@ -5,7 +5,7 @@ abstract class Stmt {
         fun visitBlockStmt(stmt: Block): R
 //        fun visitClassStmt(stmt: Class<*>): R
         fun visitExpressionStmt(stmt: Expression): R
-//        fun visitFunctionStmt(stmt: Function): R
+        fun visitFunctionStmt(stmt: Function): R
         fun visitIfStmt(stmt: If): R
         fun visitPrintStmt(stmt: Print): R
 //        fun visitReturnStmt(stmt: Return): R
@@ -57,5 +57,11 @@ class While(val condition: Expr, val body: Stmt) : Stmt() {
 class Break : Stmt() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitBreakStmt(this)
+    }
+}
+
+class Function(val name: Token, val params: List<Token>, val body: List<Stmt>) : Stmt() {
+    override fun <R> accept(visitor: Visitor<R>): R {
+        return visitor.visitFunctionStmt(this)
     }
 }

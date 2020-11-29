@@ -1,5 +1,6 @@
 package aq
 
+import java.util.*
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
@@ -7,7 +8,20 @@ import kotlin.contracts.contract
 class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     private class BreakException: Exception()
 
-    private var environment = Environment()
+    val globals = Environment()
+    private var environment = globals
+
+    init {
+        globals.define("clock", object : Callable {
+            override val arity = 0
+
+            override fun call(interpreter: Interpreter, arguments: List<Any?>): Any {
+                return (System.currentTimeMillis() / 1000).toDouble()
+            }
+
+            override fun toString() = "<native fn>"
+        })
+    }
 
     fun interpret(statements: List<Stmt>) {
         try {
@@ -125,6 +139,18 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         return eval(expr.right)
     }
 
+    override fun visitCallExpr(expr: Call): Any? {
+        val callee = eval(expr.callee)
+        val arguments = expr.arguments.map(::eval)
+
+        if(callee !is Callable) throw RuntimeError(expr.paren, "can only call functions and classes")
+        if(callee.arity != arguments.size) throw RuntimeError(
+            expr.paren,
+            "Expected ${callee.arity} arguments but got ${arguments.size}"
+        )
+
+        return callee.call(this, arguments)
+    }
 
     // statements ======================
 
@@ -141,6 +167,11 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     override fun visitVarStmt(stmt: Var) {
         val value = stmt.initializer?.let(::eval)
         environment.define(stmt.name.lexeme, value)
+    }
+
+    override fun visitFunctionStmt(stmt: Function) {
+        val function = AqFunction(stmt)
+        environment.define(stmt.name.lexeme, function)
     }
 
     override fun visitBlockStmt(stmt: Block) {
@@ -179,7 +210,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         return expr.accept(this)
     }
 
-    private fun executeBlock(
+    fun executeBlock(
         statements: List<Stmt?>,
         blockEnv: Environment
     ) {
@@ -213,8 +244,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     private fun stringify(obj: Any?): String? {
         obj ?: return "nil"
         if (obj is Double) {
-            val text = obj.toString()
-            return if(text.endsWith(".0")) text.dropLast(2) else text
+            return if(obj - obj.toInt() == 0.0) obj.toInt().toString() else obj.toString()
         }
         return obj.toString()
     }

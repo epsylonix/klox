@@ -5,7 +5,7 @@ abstract class Expr {
         fun visitAssignExpr(expr: Assign): R
         fun visitBinaryExpr(expr: Binary): R
 
-        //    fun visitCallExpr(expr: Call): R
+        fun visitCallExpr(expr: Call): R
 //    fun visitGetExpr(expr: Get?): R
 
         fun visitGroupingExpr(expr: Grouping): R
@@ -61,5 +61,11 @@ data class Assign(val name: Token, val value: Expr) : Expr() {
 class Logical(val left: Expr, val operator: Token, val right: Expr) : Expr() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitLogicalExpr(this)
+    }
+}
+
+class Call(val callee: Expr, val paren: Token, val arguments: List<Expr>) : Expr() {
+    override fun <R> accept(visitor: Visitor<R>): R {
+        return visitor.visitCallExpr(this)
     }
 }

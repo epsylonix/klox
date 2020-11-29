@@ -1,5 +1,7 @@
 package aq
 
+import java.util.*
+
 
 class ParseError : RuntimeException()
 
@@ -38,9 +40,39 @@ class Parser(private val tokens: List<Token>) {
 //        }
     }
 
+    private fun function(kind: String): Function {
+        val name = consume(TokenType.IDENTIFIER, "Expected $kind name")
+        consume(TokenType.LEFT_PAREN, "Expected '(' after $kind name")
+
+        val parameters = mutableListOf<Token>()
+        if (!check(TokenType.RIGHT_PAREN)) {
+            do {
+                if (parameters.size >= 255) {
+                    error(peek(), "Can't have more than 255 parameters")
+                }
+                parameters.add(
+                    consume(TokenType.IDENTIFIER, "Expected parameter name")
+                )
+            } while (match(TokenType.COMMA))
+        }
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters")
+
+        consume(TokenType.LEFT_BRACE, "Expected '{' before $kind body")
+        val body = block()
+
+        return Function(name, parameters, body)
+    }
+
     private fun declaration(): Stmt? {
         return try {
-            if (match(TokenType.VAR)) varDeclaration() else statement()
+            when {
+                match(TokenType.FUN) ->
+                    function("function")
+                match(TokenType.VAR) ->
+                    varDeclaration()
+                else ->
+                    statement()
+            }
         } catch (error: ParseError) {
             synchronize()
             null
@@ -258,7 +290,7 @@ class Parser(private val tokens: List<Token>) {
             return Unary(operator, right)
         }
 
-        return primary()
+        return call()
     }
 
     private fun synchronize() {
@@ -279,6 +311,33 @@ class Parser(private val tokens: List<Token>) {
             }
             advance()
         }
+    }
+
+    private fun call(): Expr {
+        var expr = primary()
+        while (true) {
+            if (match(TokenType.LEFT_PAREN)) {
+                expr = finishCall(expr)
+            } else {
+                break
+            }
+        }
+        return expr
+    }
+
+    private fun finishCall(callee: Expr): Expr {
+        val arguments = mutableListOf<Expr>()
+        if (!check(TokenType.RIGHT_PAREN)) {
+            do {
+                arguments.add(expression())
+                if (arguments.size >= 255) error(peek(), "Can't have more than 255 arguments.")
+            } while (match(TokenType.COMMA))
+        }
+        val paren = consume(
+            TokenType.RIGHT_PAREN,
+            "Expected ')' after a function arguments"
+        )
+        return Call(callee, paren, arguments)
     }
 
     private fun primary(): Expr {
