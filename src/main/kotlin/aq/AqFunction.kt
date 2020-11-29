@@ -1,6 +1,9 @@
 package aq
 
-class AqFunction(private val declaration: Function) : Callable {
+class AqFunction(
+    private val declaration: Function,
+    private val closure: Environment
+) : Callable {
     override val arity: Int
         get() = declaration.params.size
 
@@ -8,7 +11,7 @@ class AqFunction(private val declaration: Function) : Callable {
         interpreter: Interpreter,
         arguments: List<Any?>
     ): Any? {
-        val environment = Environment(interpreter.globals)
+        val environment = Environment(closure)
 
         declaration.params.forEachIndexed { i, param ->
             environment.define(param.lexeme, arguments[i])
