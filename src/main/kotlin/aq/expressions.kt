@@ -16,6 +16,7 @@ abstract class Expr {
 //    fun visitSuperExpr(expr: Super): R
 //    fun visitThisExpr(expr: This): R
         fun visitUnaryExpr(expr: Unary): R
+        fun visitFunctionExpr(expr: Function): R
         fun visitVariableExpr(expr: Variable): R
     }
 
@@ -58,13 +59,19 @@ data class Assign(val name: Token, val value: Expr) : Expr() {
     }
 }
 
-class Logical(val left: Expr, val operator: Token, val right: Expr) : Expr() {
+data class Logical(val left: Expr, val operator: Token, val right: Expr) : Expr() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitLogicalExpr(this)
     }
 }
 
-class Call(val callee: Expr, val paren: Token, val arguments: List<Expr>) : Expr() {
+data class Function(val params: List<Token>, val body: List<Stmt>) : Expr() {
+    override fun <R> accept(visitor: Visitor<R>): R {
+        return visitor.visitFunctionExpr(this)
+    }
+}
+
+data class Call(val callee: Expr, val paren: Token, val arguments: List<Expr>) : Expr() {
     override fun <R> accept(visitor: Visitor<R>): R {
         return visitor.visitCallExpr(this)
     }

@@ -1,7 +1,5 @@
 package aq
 
-import jdk.internal.util.xml.impl.XMLStreamWriterImpl.SEMICOLON
-
 
 class ParseError : RuntimeException()
 
@@ -23,6 +21,7 @@ class Parser(private val tokens: List<Token>) {
                    | "(" expression ")" ;
      */
 
+
     fun parse(): List<Stmt> {
         val statements = mutableListOf<Stmt>()
         while (!isAtEnd()) {
@@ -40,34 +39,18 @@ class Parser(private val tokens: List<Token>) {
 //        }
     }
 
-    private fun function(kind: String): Function {
+    // statements ------------------------------------------------------------
+
+    private fun functionDeclaration(kind: String): Fun {
         val name = consume(TokenType.IDENTIFIER, "Expected $kind name")
-        consume(TokenType.LEFT_PAREN, "Expected '(' after $kind name")
-
-        val parameters = mutableListOf<Token>()
-        if (!check(TokenType.RIGHT_PAREN)) {
-            do {
-                if (parameters.size >= 255) {
-                    error(peek(), "Can't have more than 255 parameters")
-                }
-                parameters.add(
-                    consume(TokenType.IDENTIFIER, "Expected parameter name")
-                )
-            } while (match(TokenType.COMMA))
-        }
-        consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters")
-
-        consume(TokenType.LEFT_BRACE, "Expected '{' before $kind body")
-        val body = block()
-
-        return Function(name, parameters, body)
+        return Fun(name, function(kind))
     }
 
     private fun declaration(): Stmt? {
         return try {
             when {
                 match(TokenType.FUN) ->
-                    function("function")
+                    functionDeclaration("function")
                 match(TokenType.VAR) ->
                     varDeclaration()
                 else ->
@@ -203,8 +186,33 @@ class Parser(private val tokens: List<Token>) {
         return Var(name, initialValue)
     }
 
+
+    // expressions ------------------------------------------------------------
+
     private fun expression(): Expr {
         return assignment()
+    }
+
+    private fun function(kind: String = "function"): Function {
+        consume(TokenType.LEFT_PAREN, "Expected '(' in $kind declaration")
+
+        val parameters = mutableListOf<Token>()
+        if (!check(TokenType.RIGHT_PAREN)) {
+            do {
+                if (parameters.size >= 255) {
+                    error(peek(), "Can't have more than 255 parameters")
+                }
+                parameters.add(
+                    consume(TokenType.IDENTIFIER, "Expected parameter name")
+                )
+            } while (match(TokenType.COMMA))
+        }
+        consume(TokenType.RIGHT_PAREN, "Expected ')' after parameters")
+
+        consume(TokenType.LEFT_BRACE, "Expected '{' before $kind body")
+        val body = block()
+
+        return Function(parameters, body)
     }
 
     private fun assignment(): Expr {
@@ -363,6 +371,8 @@ class Parser(private val tokens: List<Token>) {
             consume(TokenType.RIGHT_PAREN, "Missing ')' after the expression")
             return Grouping(expr)
         }
+
+        if(match(TokenType.FUN)) return function("function")
 
         error(peek(), "Expected expression")
         throw ParseError()

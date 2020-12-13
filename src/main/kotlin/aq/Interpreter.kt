@@ -37,7 +37,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     @ExperimentalContracts
-    override fun visitBinaryExpr(expr: Binary): Any? {
+    override fun visitBinaryExpr(expr: Binary): Any {
         val left = eval(expr.left)
         val right = eval(expr.right)
 
@@ -153,6 +153,10 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         return callee.call(this, arguments)
     }
 
+    override fun visitFunctionExpr(expr: Function): Any {
+        return AqFunction("anonymous", expr, environment)
+    }
+
     // statements ======================
 
     override fun visitExpressionStmt(stmt: Expression) {
@@ -170,8 +174,8 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         environment.define(stmt.name.lexeme, value)
     }
 
-    override fun visitFunctionStmt(stmt: Function) {
-        val function = AqFunction(stmt, environment)
+    override fun visitFunStmt(stmt: Fun) {
+        val function = AqFunction(stmt.name.lexeme, stmt.function, environment)
         environment.define(stmt.name.lexeme, function)
     }
 

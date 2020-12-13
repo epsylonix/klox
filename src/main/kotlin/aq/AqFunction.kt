@@ -1,6 +1,7 @@
 package aq
 
 class AqFunction(
+    private val name: String,
     private val declaration: Function,
     private val closure: Environment
 ) : Callable {
@@ -26,5 +27,5 @@ class AqFunction(
         return null
     }
 
-    override fun toString() = "<fun ${declaration.name.lexeme}/${arity}>"
+    override fun toString() = "<fun $name/$arity>"
 }
