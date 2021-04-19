@@ -6,11 +6,15 @@ class Environment(
 ) {
     private val values = mutableMapOf<String, Any?>()
 
-    fun get(name: Token): Any? {
+    operator fun get(name: Token): Any? {
         if (values.containsKey(name.lexeme)) return values[name.lexeme]
         if (enclosing != null) return enclosing.get(name)
 
         throw RuntimeError(name,"Undefined variable ${name.lexeme}");
+    }
+
+    fun getAt(distance: Int, name: String): Any? {
+        return ancestor(distance).values[name]
     }
 
     fun define(name: String, value: Any?) {
@@ -26,5 +30,15 @@ class Environment(
             else ->
                 throw RuntimeError(name, "Undefined variable ${name.lexeme}")
         }
+    }
+
+    fun assignAt(distance: Int, name: Token, value: Any?) {
+        ancestor(distance).values[name.lexeme] = value
+    }
+
+    private fun ancestor(distance: Int): Environment {
+        var env = this
+        repeat(distance) { env = env.enclosing ?: throw IllegalStateException("environment doesn't have $distance ancestors") }
+        return env
     }
 }

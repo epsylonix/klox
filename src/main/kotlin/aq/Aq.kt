@@ -31,12 +31,10 @@ object Aq {
         val tokens: List<Token> = scanner.scanTokens()
 
         val statements = Parser(tokens).parse()
-//        println(AstPrinter().print(expression))
+
+        val resolver = VarResolver(interpreter);
+        resolver.resolve(statements)
 
         interpreter.interpret(statements)
-//
-//        for (token in tokens) {
-//            System.out.println(token)
-//        }
     }
 }

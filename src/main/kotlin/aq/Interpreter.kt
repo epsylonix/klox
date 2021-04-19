@@ -12,6 +12,8 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     val globals = Environment()
     private var environment = globals
 
+    private val locals = mutableMapOf<Expr, Int>()
+
     init {
         globals.define("clock", object : Callable {
             override val arity = 0
@@ -30,6 +32,12 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         } catch (error: RuntimeError) {
             runtimeError(error)
         }
+    }
+
+    fun resolve(expr: Expr, depth: Int) {
+        // number of scopes (environments) between the scope where this expr is defined
+        // and the current scope
+        locals[expr] = depth
     }
 
     private fun execute(stmt: Stmt) {
@@ -119,12 +127,22 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
 
     // access to var
     override fun visitVariableExpr(expr: Variable): Any? {
-        return environment.get(expr.name)
+        return lookUpVariable(expr.name, expr)
+    }
+
+    private fun lookUpVariable(name: Token, expr: Expr): Any? {
+        val distance = locals[expr]
+        return distance?.let { environment.getAt(it, name.lexeme) }
+            ?: globals[name]
     }
 
     override fun visitAssignExpr(expr: Assign): Any? {
         val value = eval(expr.value)
-        environment.assign(expr.name, value)
+
+        val distance = locals[expr]
+        distance?.let { environment.assignAt(it, expr.name, value) }
+            ?: globals.assign(expr.name, value)
+
         return value
     }
 
@@ -174,7 +192,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
         environment.define(stmt.name.lexeme, value)
     }
 
-    override fun visitFunStmt(stmt: Fun) {
+    override fun visitFunctionStmt(stmt: Fun) {
         val function = AqFunction(stmt.name.lexeme, stmt.function, environment)
         environment.define(stmt.name.lexeme, function)
     }

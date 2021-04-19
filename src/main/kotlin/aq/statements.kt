@@ -5,7 +5,7 @@ abstract class Stmt {
         fun visitBlockStmt(stmt: Block): R
 //        fun visitClassStmt(stmt: Class<*>): R
         fun visitExpressionStmt(stmt: Expression): R
-        fun visitFunStmt(stmt: Fun): R
+        fun visitFunctionStmt(stmt: Fun): R
         fun visitIfStmt(stmt: If): R
         fun visitPrintStmt(stmt: Print): R
         fun visitReturnStmt(stmt: Return): R
@@ -62,7 +62,7 @@ class Break : Stmt() {
 
 class Fun(val name: Token, val function: Function) : Stmt() {
     override fun <R> accept(visitor: Visitor<R>): R {
-        return visitor.visitFunStmt(this)
+        return visitor.visitFunctionStmt(this)
     }
 }
 
