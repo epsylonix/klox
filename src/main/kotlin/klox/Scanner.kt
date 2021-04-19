@@ -1,6 +1,6 @@
-package aq
+package klox
 
-import aq.TokenType.Companion.KEYWORDS
+import klox.TokenType.Companion.KEYWORDS
 import java.util.*
 
 

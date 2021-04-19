@@ -1,4 +1,4 @@
-package aq
+package klox
 
 enum class TokenType {
     // Single-character tokens.

@@ -1,4 +1,4 @@
-package aq
+package klox
 
 data class Token(
     val type: TokenType,

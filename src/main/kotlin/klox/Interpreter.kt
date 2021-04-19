@@ -1,4 +1,4 @@
-package aq
+package klox
 
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
@@ -172,7 +172,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     override fun visitFunctionExpr(expr: Function): Any {
-        return AqFunction("anonymous", expr, environment)
+        return KloxFunction("anonymous", expr, environment)
     }
 
     // statements ======================
@@ -193,7 +193,7 @@ class Interpreter : Expr.Visitor<Any?>, Stmt.Visitor<Unit> {
     }
 
     override fun visitFunctionStmt(stmt: Fun) {
-        val function = AqFunction(stmt.name.lexeme, stmt.function, environment)
+        val function = KloxFunction(stmt.name.lexeme, stmt.function, environment)
         environment.define(stmt.name.lexeme, function)
     }
 

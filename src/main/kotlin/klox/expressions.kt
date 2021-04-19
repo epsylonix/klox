@@ -1,4 +1,4 @@
-package aq
+package klox
 
 abstract class Expr {
     interface Visitor<R> {
@@ -12,7 +12,7 @@ abstract class Expr {
         fun visitLiteralExpr(expr: Literal): R
         fun visitLogicalExpr(expr: Logical): R
 
-        //    fun visitSetExpr(expr: Set<*>): R
+//    fun visitSetExpr(expr: Set<*>): R
 //    fun visitSuperExpr(expr: Super): R
 //    fun visitThisExpr(expr: This): R
         fun visitUnaryExpr(expr: Unary): R

@@ -1,4 +1,4 @@
-package aq
+package klox
 
 import java.nio.charset.Charset
 import java.nio.file.Files
@@ -6,13 +6,13 @@ import java.nio.file.Paths
 
 class CompilerError(message: String) : Exception(message)
 
-object Aq {
+object Klox {
     private val interpreter = Interpreter()
 
     fun exec(path: String) {
         Files.readAllBytes(Paths.get(path))
             .toString(Charset.defaultCharset())
-            .also(Aq::run)
+            .also(Klox::run)
     }
 
     fun repl() {

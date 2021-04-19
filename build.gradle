@@ -3,7 +3,7 @@ plugins {
     id 'application'
 }
 group = 'me.z'
-version = '1.0-SNAPSHOT'
+version = '0.1'
 
 repositories {
     mavenCentral()
@@ -35,7 +35,7 @@ task uberJar(type: Jar) {
     manifest {
         attributes(
                 'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
-                'Main-Class': 'aq.MainKt'
+                'Main-Class': 'klox.MainKt'
         )
     }
 }

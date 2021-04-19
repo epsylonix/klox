@@ -1,6 +1,6 @@
-package aq
+package klox
 
-class AqFunction(
+class KloxFunction(
     private val name: String,
     private val declaration: Function,
     private val closure: Environment
